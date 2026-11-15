@@ -141,6 +141,19 @@
     return Math.min(deck.duration || 0, (deck.offset || 0) + Math.max(0, ctx.currentTime - deck.startedAt));
   }
 
+  /* A deck is done when its buffer runs out. WebKitGTK does not reliably
+     dispatch ended on a buffer source — the engine bundled in the AppImage
+     never does — so tick() also lands the deck once its own clock passes the
+     buffer length. Both routes come through here, and stopping the source
+     first means only one of them can advance the queue. */
+  function finishDeck(deck) {
+    if (!deck || !deck.playing) return;
+    deck.playing = false;
+    deck.offset = deck.duration || 0;
+    stopSource(deck);
+    if (deck === decks[active] && !streamMode && !fading && !switching) advance(0);
+  }
+
   function startDeck(deck, buffer, offset, trackId) {
     stopSource(deck);
     deck.buffer = buffer;
@@ -155,10 +168,7 @@
     src.connect(deck.gain);
     src.onended = function () {
       if (deck.source !== src) return;
-      deck.source = null;
-      deck.playing = false;
-      deck.offset = deck.duration;
-      if (deck === decks[active] && !streamMode && !fading && !switching) advance(0);
+      finishDeck(deck);
     };
     deck.source = src;
     deck.startedAt = ctx.currentTime;
@@ -204,7 +214,11 @@
       duration - position <= crossfade
     ) {
       advance(crossfade);
+      return;
     }
+
+    // Backstop for engines that never dispatch ended — see finishDeck().
+    if (duration > 0 && position >= duration - 0.02) finishDeck(deck);
   }
 
   function ensureGraph() {

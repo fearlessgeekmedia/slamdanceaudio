@@ -223,7 +223,20 @@ fn use_host_gstreamer() {
     }
 }
 
+// WebKitGTK 2.38 switched native HLS playback off by default (web sites are
+// expected to use Media Source Extensions instead), so pasting an .m3u8 radio
+// address — which is what iHeart and most station directories publish — failed
+// instantly with "The operation is not supported." The engine reads this
+// variable when the web process starts, so it has to be set before Tauri builds
+// the window. Streams without HLS are unaffected.
+fn enable_hls_playback() {
+    if std::env::var_os("WEBKIT_GST_ENABLE_HLS_SUPPORT").is_none() {
+        std::env::set_var("WEBKIT_GST_ENABLE_HLS_SUPPORT", "1");
+    }
+}
+
 fn main() {
+    enable_hls_playback();
     use_host_gstreamer();
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
