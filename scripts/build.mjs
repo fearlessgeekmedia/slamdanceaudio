@@ -5,7 +5,8 @@
  *
  * Linux, macOS, and Windows use Tauri and must be built on their matching OS.
  * FreeBSD uses the Electron runtime from the FreeBSD ports/package tree; the
- * resulting archive contains the app and launcher, not an Electron binary.
+ * resulting archive and pkg contain the app and launcher, not an Electron
+ * binary (Electron ships as a package dependency instead).
  */
 
 import { spawnSync } from 'node:child_process';
@@ -14,6 +15,7 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -51,7 +53,7 @@ Targets:
   linux      Tauri: .deb + AppImage
   macos      Tauri: .dmg and .app
   windows    Tauri: NSIS installer
-  freebsd    Electron: runtime-linked FreeBSD .tar.gz
+  freebsd    Electron: runtime-linked FreeBSD .tar.gz + .pkg
   stage      Only stage the static player into build/web
 
 Options:
@@ -66,7 +68,9 @@ Notes:
   Tauri is native software: Linux, macOS, and Windows builds must run on the
   matching operating system (or CI runner), and macOS signing/notarization is
   only available on macOS. The FreeBSD archive can be assembled on any host,
-  but it requires Electron at runtime on FreeBSD (e.g. pkg install electron).
+  but it runs on FreeBSD with Electron installed (a dependency of the .pkg;
+  for the .tar.gz: e.g. pkg install devel/electron44). The .pkg itself needs
+  pkg(8), so it is only produced on FreeBSD.
 `);
 }
 
@@ -324,11 +328,21 @@ function writeFreeBsdLauncher(file) {
 set -eu
 SELF=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 APP="$SELF/../resources/app"
-ELECTRON="\${ELECTRON_BIN:-electron}"
+# FreeBSD's Electron ports install versioned binaries (electron44, ...), so
+# honour ELECTRON_BIN first and otherwise use the newest Electron on PATH.
+ELECTRON="\${ELECTRON_BIN:-}"
+if [ -z "$ELECTRON" ]; then
+  for candidate in ${ELECTRON_CANDIDATES.join(' ')} electron; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      ELECTRON="$candidate"
+      break
+    fi
+  done
+fi
 
-if ! command -v "$ELECTRON" >/dev/null 2>&1; then
+if [ -z "$ELECTRON" ] || ! command -v "$ELECTRON" >/dev/null 2>&1; then
   echo "Slamdance Audio needs Electron on FreeBSD." >&2
-  echo "Install it with: doas pkg install electron" >&2
+  echo "Install it with: doas pkg install devel/electron44" >&2
   exit 1
 fi
 
@@ -337,6 +351,246 @@ exec "$ELECTRON" "$APP" "$@"
     'utf8'
   );
   chmodSync(file, 0o755);
+}
+
+const FREEBSD_ORIGIN = 'audio/slamdance-audio';
+const FREEBSD_CATEGORY = 'audio';
+const FREEBSD_WWW_FALLBACK = 'https://github.com/fearlessgeekmedia/slamdanceaudio';
+const ELECTRON_CANDIDATES = ['electron44', 'electron43', 'electron42', 'electron41'];
+
+function readTauriConf() {
+  try {
+    return JSON.parse(readFileSync(path.join(ROOT, 'src-tauri', 'tauri.conf.json'), 'utf8'));
+  } catch (err) {
+    return {};
+  }
+}
+
+function freeBsdPkgVersion() {
+  return PKG.version || '0.0.1';
+}
+
+function freeBsdRepoUrl() {
+  const repo = PKG.repository;
+  if (typeof repo === 'string' && repo) return repo;
+  if (repo && typeof repo.url === 'string' && repo.url) {
+    return repo.url.replace(/^git\+/, '');
+  }
+  if (typeof PKG.homepage === 'string' && PKG.homepage) return PKG.homepage;
+  return FREEBSD_WWW_FALLBACK;
+}
+
+function pkgBinary() {
+  if (probe('pkg', ['--version'])) return 'pkg';
+  if (probe('/usr/sbin/pkg', ['--version'])) return '/usr/sbin/pkg';
+  return null;
+}
+
+// Newest Electron port first; pkg install resolves the dependency by origin,
+// so a missing version just means "any".
+function probeElectronDep(pkgBin) {
+  for (const name of ELECTRON_CANDIDATES) {
+    const result = spawnSync(pkgBin, ['rquery', '%v', name], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    });
+    if (!result.error && result.status === 0) {
+      const version = String(result.stdout || '').split('\n')[0].trim();
+      if (version) return { name, origin: 'devel/' + name, version };
+    }
+  }
+  const name = ELECTRON_CANDIDATES[0];
+  return { name, origin: 'devel/' + name, version: null };
+}
+
+function writeFreeBsdInstalledLauncher(file, appPath) {
+  writeFileSync(
+    file,
+    `#!/bin/sh
+set -eu
+APP=${JSON.stringify(appPath)}
+# FreeBSD's Electron ports install versioned binaries (electron44, ...), so
+# honour ELECTRON_BIN first and otherwise use the newest Electron on PATH.
+ELECTRON="\${ELECTRON_BIN:-}"
+if [ -z "$ELECTRON" ]; then
+  for candidate in ${ELECTRON_CANDIDATES.join(' ')} electron; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      ELECTRON="$candidate"
+      break
+    fi
+  done
+fi
+
+if [ -z "$ELECTRON" ] || ! command -v "$ELECTRON" >/dev/null 2>&1; then
+  echo "Slamdance Audio needs Electron on FreeBSD." >&2
+  echo "Install it with: doas pkg install devel/electron44" >&2
+  exit 1
+fi
+
+exec "$ELECTRON" "$APP" "$@"
+`,
+    'utf8'
+  );
+  chmodSync(file, 0o755);
+}
+
+function writeFreeBsdDesktop(file, execPath, comment) {
+  writeFileSync(
+    file,
+    '[Desktop Entry]\n' +
+      'Type=Application\n' +
+      'Name=Slamdance Audio\n' +
+      'Comment=' + comment + '\n' +
+      'Exec=' + execPath + '\n' +
+      'Icon=' + SLUG + '\n' +
+      'Terminal=false\n' +
+      'Categories=AudioVideo;Audio;Player;\n' +
+      'StartupWMClass=' + SLUG + '\n',
+    'utf8'
+  );
+}
+
+function collectRelativeFiles(base) {
+  const found = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.isFile()) {
+        found.push(path.relative(base, full).split(path.sep).join('/'));
+      }
+    }
+  };
+  walk(base);
+  found.sort();
+  return found;
+}
+
+function writeFreeBsdManifest(file, electronDep) {
+  const tauri = readTauriConf();
+  const bundle = (tauri && tauri.bundle) || {};
+  const comment = bundle.shortDescription || PKG.description || 'Offline-first music player';
+  const desc = bundle.longDescription || PKG.description || comment;
+  const lines = [
+    'name = ' + JSON.stringify(SLUG),
+    'version = ' + JSON.stringify(freeBsdPkgVersion()),
+    'origin = ' + JSON.stringify(FREEBSD_ORIGIN),
+    'comment = ' + JSON.stringify(comment),
+    'desc = ' + JSON.stringify(desc),
+    'maintainer = ' + JSON.stringify('Fearless Geek Media'),
+    'www = ' + JSON.stringify(freeBsdRepoUrl()),
+    'prefix = ' + JSON.stringify('/usr/local'),
+    'licenselogic = ' + JSON.stringify('single'),
+    'licenses = ["MIT"]',
+    'categories = [' + JSON.stringify(FREEBSD_CATEGORY) + ']',
+  ];
+  if (electronDep) {
+    lines.push('deps = {');
+    lines.push('  ' + electronDep.name + ' = {');
+    if (electronDep.version) {
+      lines.push('    version = ' + JSON.stringify(electronDep.version));
+    }
+    lines.push('    origin = ' + JSON.stringify(electronDep.origin));
+    lines.push('  }');
+    lines.push('}');
+  }
+  writeFileSync(file, lines.join('\n') + '\n', 'utf8');
+}
+
+// Assembles the installable FreeBSD package from the staged app directory:
+// /usr/local/share/<slug> plus a /usr/local/bin launcher, a desktop entry,
+// and icons. Needs pkg(8), so it only runs on FreeBSD; elsewhere the .tar.gz
+// is still produced and this step is skipped with a warning.
+function buildFreeBsdPkg(appDir) {
+  const pkgBin = pkgBinary();
+  if (!pkgBin) {
+    console.warn(
+      '[build] pkg(8) not found; skipping the FreeBSD .pkg ' +
+        '(the .tar.gz above works anywhere). Build on FreeBSD for the .pkg.'
+    );
+    return;
+  }
+
+  const electronDep = probeElectronDep(pkgBin);
+  console.log(
+    '[build] FreeBSD runtime dependency -> ' +
+      electronDep.origin +
+      (electronDep.version ? ' ' + electronDep.version : '')
+  );
+
+  const tauri = readTauriConf();
+  const identifier = tauri.identifier || 'media.fearlessgeek.slamdanceaudio';
+  const shortDesc =
+    (tauri.bundle && tauri.bundle.shortDescription) || 'Offline-first music player';
+
+  const pkgStage = path.join(ROOT, 'build', 'freebsd-pkg-stage');
+  rmSync(pkgStage, { recursive: true, force: true });
+  const prefixRoot = path.join(pkgStage, 'usr', 'local');
+  mkdirSync(path.join(prefixRoot, 'share'), { recursive: true });
+
+  const appInstallDir = path.join(prefixRoot, 'share', SLUG);
+  cpSync(appDir, appInstallDir, { recursive: true });
+
+  const binDir = path.join(prefixRoot, 'bin');
+  mkdirSync(binDir, { recursive: true });
+  writeFreeBsdInstalledLauncher(path.join(binDir, SLUG), '/usr/local/share/' + SLUG);
+
+  const applicationsDir = path.join(prefixRoot, 'share', 'applications');
+  mkdirSync(applicationsDir, { recursive: true });
+  writeFreeBsdDesktop(
+    path.join(applicationsDir, identifier + '.desktop'),
+    '/usr/local/bin/' + SLUG,
+    shortDesc
+  );
+
+  const iconSources = [
+    ['32x32', '32x32.png'],
+    ['64x64', '64x64.png'],
+    ['128x128', '128x128.png'],
+    ['256x256', '128x128@2x.png'],
+  ];
+  for (const [size, src] of iconSources) {
+    const from = path.join(ROOT, 'src-tauri', 'icons', src);
+    if (!existsSync(from)) continue;
+    const dir = path.join(prefixRoot, 'share', 'icons', 'hicolor', size, 'apps');
+    mkdirSync(dir, { recursive: true });
+    cpSync(from, path.join(dir, SLUG + '.png'));
+  }
+  const svgFrom = path.join(ROOT, 'src-tauri', 'icons', 'icon.svg');
+  if (existsSync(svgFrom)) {
+    const dir = path.join(prefixRoot, 'share', 'icons', 'hicolor', 'scalable', 'apps');
+    mkdirSync(dir, { recursive: true });
+    cpSync(svgFrom, path.join(dir, SLUG + '.svg'));
+  }
+
+  const manifestPath = path.join(ROOT, 'build', 'freebsd-manifest.ucl');
+  writeFreeBsdManifest(manifestPath, electronDep);
+
+  const files = collectRelativeFiles(prefixRoot);
+  if (!files.length) fail('FreeBSD pkg stage is empty; refusing to pack.');
+  const plistPath = path.join(ROOT, 'build', 'freebsd-plist');
+  writeFileSync(plistPath, files.join('\n') + '\n', 'utf8');
+
+  run(pkgBin, [
+    'create',
+    '-M', manifestPath,
+    '-r', pkgStage,
+    '-p', plistPath,
+    '-o', path.join(ROOT, 'dist'),
+  ]);
+
+  const produced = path.join(ROOT, 'dist', SLUG + '-' + freeBsdPkgVersion() + '.pkg');
+  const branded = path.join(ROOT, 'dist', SLUG + '-freebsd-' + process.arch + '.pkg');
+  if (produced !== branded) {
+    rmSync(branded, { force: true });
+    if (existsSync(produced)) {
+      cpSync(produced, branded);
+      rmSync(produced);
+    }
+  }
+  if (!existsSync(branded)) fail('pkg create finished but produced no .pkg: ' + branded);
+  console.log('[build] FreeBSD pkg -> ' + path.relative(ROOT, branded));
 }
 
 function buildFreeBsd() {
@@ -385,13 +639,17 @@ This archive uses the Electron runtime already installed on FreeBSD.
 It does not contain a private copy of Electron.
 
 Install the runtime:
-  doas pkg install electron
+  doas pkg install devel/electron44
 
 Run the player:
   ./bin/${SLUG}
 
 To use a specific Electron executable:
   ELECTRON_BIN=/path/to/electron ./bin/${SLUG}
+
+Prefer a managed install? The matching .pkg (built alongside this archive
+on FreeBSD) declares Electron as a dependency and installs to /usr/local:
+  doas pkg install /path/to/${SLUG}-freebsd-*.pkg
 `,
     'utf8'
   );
@@ -408,6 +666,8 @@ To use a specific Electron executable:
 
   console.log('[build] FreeBSD app -> ' + path.relative(ROOT, destination));
   console.log('[build] FreeBSD archive -> ' + path.relative(ROOT, tarball));
+
+  buildFreeBsdPkg(appDir);
 }
 
 function build(options) {

@@ -47,7 +47,7 @@ no bundler, no framework and no build step for the web files.
 | build on Linux | Node.js 20+, Rust (rustup), and the WebKitGTK 4.1 / GTK 3 / libsoup 3 development packages that `pkg-config` can find as `webkit2gtk-4.1`, `javascriptcoregtk-4.1`, `gtk+-3.0` and `libsoup-3.0` |
 | build on macOS | Node.js 20+, Rust, and Xcode Command Line Tools (`xcode-select --install`) |
 | build on Windows | Node.js 20+, Rust with the MSVC toolchain, Visual Studio Build Tools, and WebView2 (present on Windows 10/11) |
-| build on FreeBSD | Node.js 20+ and the Electron runtime (`pkg install electron`) |
+| build on FreeBSD | Node.js 20+ and pkg(8); runs against the Electron runtime (`pkg install devel/electron44`) |
 
 Tauri is native software: each Linux/macOS/Windows package must be built on that operating
 system (or a CI runner for it). The FreeBSD archive can be assembled anywhere, but it links
@@ -60,7 +60,7 @@ against the Electron already installed on FreeBSD rather than carrying its own c
 ./build.sh linux        # Tauri: .deb + AppImage
 ./build.sh macos        # Tauri: .dmg (+ .app)
 ./build.sh windows      # Tauri: NSIS installer
-./build.sh freebsd      # Electron: runtime-linked FreeBSD .tar.gz
+./build.sh freebsd      # Electron: runtime-linked FreeBSD .tar.gz + .pkg
 ./build.sh stage        # only refresh build/web
 ./build.sh --help       # every option
 ```
@@ -74,7 +74,7 @@ takes a few minutes; `--no-bundle` stops after compiling the binary.
 | `./build.sh linux` | `dist/slamdance-audio-linux-<arch>/deb/*.deb` and `…/appimage/*.AppImage` |
 | `./build.sh macos` | `dist/slamdance-audio-macos-<arch>/dmg/*.dmg` |
 | `./build.sh windows` | `dist/slamdance-audio-windows-<arch>/nsis/*-setup.exe` |
-| `./build.sh freebsd` | `dist/slamdance-audio-freebsd-<arch>.tar.gz` (run `./bin/slamdance-audio`) |
+| `./build.sh freebsd` | `dist/slamdance-audio-freebsd-<arch>.tar.gz` plus, on FreeBSD, `dist/slamdance-audio-freebsd-<arch>.pkg` (`doas pkg install` it) |
 | `./build.sh stage` | `build/web/` — the static player, ready to copy anywhere |
 
 Options:
@@ -170,7 +170,7 @@ a browser.
   the .deb there, or build the AppImage on the distro you plan to run it on.
 - macOS signing and notarization are not configured — add your identity to the Tauri config for
   distribution beyond your own machine.
-- The FreeBSD archive expects Electron on the machine that runs it; `ELECTRON_BIN` overrides the
+- The FreeBSD .pkg declares Electron as a dependency and installs to `/usr/local`; the .tar.gz expects Electron on the machine that runs it (`ELECTRON_BIN` overrides the
   executable the launcher uses.
 
 ## License

@@ -5,7 +5,7 @@
 #   ./build.sh linux        # Tauri: .deb + AppImage
 #   ./build.sh macos        # Tauri: .dmg and .app (must run on macOS)
 #   ./build.sh windows      # Tauri: NSIS installer (must run on Windows)
-#   ./build.sh freebsd      # Electron: runtime-linked FreeBSD .tar.gz
+#   ./build.sh freebsd      # Electron: runtime-linked FreeBSD .tar.gz + .pkg
 #   ./build.sh stage        # only refresh build/web
 #   ./build.sh --help       # every option
 #
