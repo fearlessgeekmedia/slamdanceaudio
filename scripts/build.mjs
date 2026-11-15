@@ -367,7 +367,7 @@ function readTauriConf() {
 }
 
 function freeBsdPkgVersion() {
-  return PKG.version || '0.0.1';
+  return PKG.version || '0.0.2';
 }
 
 function freeBsdRepoUrl() {
@@ -616,7 +616,7 @@ function buildFreeBsd() {
       {
         name: SLUG,
         productName: PKG.productName || 'Slamdance Audio',
-        version: PKG.version || '0.0.1+r2',
+        version: PKG.version || '0.0.2',
         description: PKG.description || '',
         main: 'main.cjs',
         private: true,
