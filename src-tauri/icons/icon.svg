@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" rx="180" fill="#0a0a0c"/>
+  <circle cx="822" cy="202" r="48" fill="#c8ff00"/>
+  <text x="512" y="642" text-anchor="middle"
+        font-family="DejaVu Sans, Arial Black, Helvetica, sans-serif"
+        font-size="430" font-weight="900" fill="#f5f1e6">SD</text>
+  <rect x="250" y="716" width="524" height="38" fill="#ff3b00"/>
+</svg>

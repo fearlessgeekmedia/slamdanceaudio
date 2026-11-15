@@ -1,0 +1,36 @@
+/* Mosh Pit — Slamdance Audio theme.
+ * Everything a theme is: variables and rules scoped to this id.
+ * Edit freely; add any CSS the app's markup allows. */
+html[data-theme="pit"] {
+  --bg: #0a0a0c;
+  --bg-2: #101014;
+  --panel: #15151b;
+  --panel-2: #1d1d25;
+  --ink: #f5f1e6;
+  --ink-dim: #a09c92;
+  --ink-faint: #6d6a64;
+  --accent: #ff3b00;
+  --accent-2: #c8ff00;
+  --on-accent: #0b0b0d;
+  --line: #2a2a33;
+  --line-strong: #454551;
+  --shadow: 4px 4px 0 #000;
+  --radius: 2px;
+  --radius-chip: 2px;
+  --panel-border: 2px;
+  --head-track: -0.01em;
+  --head-rot: 0deg;
+  --head-skew: 0deg;
+  --head-style: normal;
+  --head-weight: 900;
+  --head-case: uppercase;
+  --font-display: "Arial Black", "Helvetica Neue", Impact, system-ui, sans-serif;
+  --font-body: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --glow: 0 0 40px rgba(255, 59, 0, 0.35);
+  --figure-a: #ff3b00;
+  --figure-b: #c8ff00;
+  --figure-c: #f5f1e6;
+  --figure-d: #7a6cff;
+  --floor: #ff3b00;
+}

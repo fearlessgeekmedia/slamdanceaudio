@@ -1,0 +1,78 @@
+/* Ska Light — Slamdance Audio theme.
+ * Everything a theme is: variables and rules scoped to this id.
+ * Edit freely; add any CSS the app's markup allows. */
+html[data-theme="ska"] {
+  --bg: #efe7d2;
+  --bg-2: #e4dbc3;
+  --panel: #fbf6e6;
+  --panel-2: #f1e9d4;
+  --ink: #111110;
+  --ink-dim: #4d4840;
+  --ink-faint: #7b7365;
+  --accent: #d20a22;
+  --accent-2: #8a6508;
+  --on-accent: #fffdf6;
+  --line: #15130f;
+  --line-strong: #15130f;
+  --shadow: 4px 4px 0 #15130f;
+  --radius: 0px;
+  --radius-chip: 999px;
+  --panel-border: 2px;
+  --head-track: 0.06em;
+  --head-rot: 0deg;
+  --head-skew: 0deg;
+  --head-style: normal;
+  --head-weight: 900;
+  --head-case: uppercase;
+  --font-display: Verdana, Geneva, Tahoma, sans-serif;
+  --font-body: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --glow: none;
+  --figure-a: #111110;
+  --figure-b: #d20a22;
+  --figure-c: #8a6508;
+  --figure-d: #5d574b;
+  --floor: #d20a22;
+}
+
+html[data-theme="ska"] #grain { opacity: 0.05; }
+
+html[data-theme="ska"] .topbar {
+  position: relative;
+  border-bottom: 3px solid var(--line-strong);
+}
+
+html[data-theme="ska"] .topbar::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 8px;
+  pointer-events: none;
+  background-image: repeating-conic-gradient(var(--line-strong) 0% 25%, var(--panel) 0% 50%);
+  background-size: 16px 16px;
+}
+
+html[data-theme="ska"] .transport {
+  position: relative;
+  border-top: 3px solid var(--line-strong);
+}
+
+html[data-theme="ska"] .transport::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 6px;
+  pointer-events: none;
+  background-image: repeating-conic-gradient(var(--line-strong) 0% 25%, var(--panel) 0% 50%);
+  background-size: 12px 12px;
+}
+
+html[data-theme="ska"] .hero-now::after {
+  width: 128px;
+  height: 16px;
+  opacity: 1;
+  background-image: repeating-conic-gradient(var(--line-strong) 0% 25%, var(--panel) 0% 50%);
+  background-size: 16px 16px;
+}
+
+html[data-theme="ska"] .chip { border-width: 2px; font-weight: 700; padding: 4px 12px; }

@@ -1,0 +1,49 @@
+/* Night Shift — Slamdance Audio theme.
+ * Everything a theme is: variables and rules scoped to this id.
+ * Edit freely; add any CSS the app's markup allows. */
+html[data-theme="terminal"] {
+  --bg: #03100a;
+  --bg-2: #05170e;
+  --panel: #061a0f;
+  --panel-2: #0a2617;
+  --ink: #a9ffb4;
+  --ink-dim: #63a971;
+  --ink-faint: #3d6c47;
+  --accent: #39ff88;
+  --accent-2: #ffe45e;
+  --on-accent: #03100a;
+  --line: #123c22;
+  --line-strong: #1d5c33;
+  --shadow: none;
+  --radius: 0px;
+  --radius-chip: 0px;
+  --panel-border: 1px;
+  --head-track: 0.08em;
+  --head-rot: 0deg;
+  --head-skew: 0deg;
+  --head-style: normal;
+  --head-weight: 900;
+  --head-case: uppercase;
+  --font-display: var(--font-mono);
+  --font-body: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --glow: 0 0 30px rgba(57, 255, 136, 0.25);
+  --figure-a: #39ff88;
+  --figure-b: #ffe45e;
+  --figure-c: #a9ffb4;
+  --figure-d: #2bbf68;
+  --floor: #39ff88;
+}
+
+html[data-theme="terminal"] #grain {
+  opacity: 0.22;
+  background-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.55) 0 1px, transparent 1px 3px);
+}
+
+html[data-theme="terminal"] .brand-sub {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+html[data-theme="terminal"] #grain { opacity: 0.03; }

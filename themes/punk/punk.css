@@ -1,0 +1,309 @@
+/* Punk Rock — Slamdance Audio theme.
+ * Everything a theme is: variables and rules scoped to this id.
+ * Edit freely; add any CSS the app's markup allows. */
+html[data-theme="punk"] {
+  --bg: #070708;
+  --bg-2: #101012;
+  --panel: #131315;
+  --panel-2: #1b1b1f;
+  --ink: #f7f4ec;
+  --ink-dim: #aca8a2;
+  --ink-faint: #77736e;
+  --accent: #ff2b00;
+  --accent-2: #f4f2ee;
+  --on-accent: #0b0b0c;
+  --line: #3a3a40;
+  --line-strong: #f4f2ee;
+  --shadow: 6px 6px 0 #000;
+  --radius: 0px;
+  --radius-chip: 4px;
+  --panel-border: 3px;
+  --head-track: -0.02em;
+  --head-rot: -1.2deg;
+  --head-skew: 0deg;
+  --head-style: normal;
+  --head-weight: 900;
+  --head-case: uppercase;
+  --font-display: "Arial Black", "Helvetica Neue", Impact, system-ui, sans-serif;
+  --font-body: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --glow: 3px 3px 0 rgba(255, 43, 0, 0.55);
+  --figure-a: #ff2b00;
+  --figure-b: #d9d5cc;
+  --figure-c: #f7f4ec;
+  --figure-d: #8d8d95;
+  --floor: #ff2b00;
+}
+
+html[data-theme="punk"] #grain {
+  opacity: 0.14;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(circle, rgba(255, 255, 255, 0.5) 0 1px, transparent 1.3px);
+  background-size: 140px 140px, 4px 4px;
+}
+
+html[data-theme="punk"] .block-head h2 {
+  display: block;
+  gap: 0;
+  transform: none;
+}
+
+html[data-theme="punk"] .cut {
+  display: inline-block;
+  padding: 0 2px;
+  margin: 0 1px;
+  background: #f4f2ee;
+  color: #0b0b0c;
+  box-shadow: 1px 1px 0 #000;
+  line-height: 1.05;
+}
+
+html[data-theme="punk"] .hero-now::after { display: none; }
+html[data-theme="punk"] .cut:nth-child(4n) { background: var(--accent); }
+
+html[data-theme="punk"] .cut:nth-child(4n + 1) { background: #0b0b0c; color: #f4f2ee; box-shadow: 1px 1px 0 #f4f2ee; }
+
+html[data-theme="punk"] .cut:nth-child(3n) { transform: rotate(-3deg) translateY(1px); }
+
+html[data-theme="punk"] .cut:nth-child(5n) { transform: rotate(3deg) translateY(-1px); }
+
+html[data-theme="punk"] .cut:nth-child(7n) { font-family: Georgia, "Times New Roman", serif; }
+
+html[data-theme="punk"] .cut:nth-child(11n) { font-family: "Courier New", ui-monospace, monospace; }
+
+html[data-theme="punk"] .cut-space { background: none; box-shadow: none; }
+
+html[data-theme="punk"] .np-actions .btn-ghost, html[data-theme="punk"] .dz-actions .btn-ghost {
+    color: #ffffff !important;
+    background-color: #000000;
+    opacity: 1;
+}
+
+html[data-theme="punk"] .chip {
+  border-color: #0b0b0c;
+  background: #f4f2ee;
+  color: #0b0b0c;
+  box-shadow: inset 0 0 0 2px rgba(11, 11, 12, 0.55), 2px 2px 0 #000;
+  transform: rotate(-1deg);
+}
+
+html[data-theme="punk"] .chip:nth-child(2n) {
+  background: #131315;
+  color: #f4f2ee;
+  box-shadow: inset 0 0 0 2px rgba(244, 242, 238, 0.55), 2px 2px 0 #000;
+  transform: rotate(1.4deg);
+}
+
+html[data-theme="punk"] .chip.is-active { background: var(--accent); color: #0b0b0c; }
+
+html[data-theme="punk"] .count {
+  background: #f4f2ee;
+  color: #0b0b0c;
+  border: 2px solid #0b0b0c;
+  font-weight: 700;
+  transform: rotate(2deg);
+}
+
+html[data-theme="punk"] .nav-btn.is-active {
+  background: #f4f2ee;
+  color: #0b0b0c;
+  transform: rotate(-1.5deg);
+  box-shadow: 3px 3px 0 #000;
+}
+
+html[data-theme="punk"] .brand-sub {
+  background: #f4f2ee;
+  color: #0b0b0c;
+  border: 2px solid #0b0b0c;
+  transform: rotate(-2deg);
+}
+
+/* Crumpled-paper flyer hero: the card is paper, not an opaque panel. */
+html[data-theme="punk"] .hero-now {
+  background: transparent url("crumpled-paper.png") center / cover no-repeat;
+  border-color: #0b0b0c;
+  color: #0b0b0c;
+  background-size: 121% 100%;
+  border: 0;
+  font-weight: bold;
+}
+
+html[data-theme="punk"] .hero-now .eyebrow {
+  color: #000;
+  font-size: 1em;
+}
+
+html[data-theme="punk"] .hero-now .np-title {
+  color: #0b0b0c;
+  text-shadow: 2px 2px 0 rgba(255, 43, 0, 0.3);
+}
+
+html[data-theme="punk"] .hero-now .np-artist {
+  color: #3c3934;
+}
+
+html[data-theme="punk"] .hero-now .btn-ghost {
+  border-color: #0b0b0c;
+  color: #0b0b0c;
+}
+
+html[data-theme="punk"] .hero-now .btn-ghost:hover {
+  background: #0b0b0c;
+  color: #f4f2ee;
+}
+
+html[data-theme="punk"] .hero-now .meter-meta {
+  color: #000;
+}
+
+html[data-theme="punk"] .hero-now .intensity-readout {
+  border-top-color: rgba(11, 11, 12, 0.35);
+}
+
+html[data-theme="punk"] .live-card {
+    background-image: url(crumpled-paper.png);
+    background-size: 120% 109%;
+    background-position: 56% 71%;
+    border: 0;
+}
+
+html[data-theme="punk"] p.tiny {
+    color: #000;
+    font-size:1em;
+    font-weight: bold;
+}
+
+html[data-theme="punk"] .live-head {
+    background-color: #000;
+    padding: 8px;
+    font-weight: 600;
+    font-size: 1em;
+}
+
+html[data-theme="punk"] .live-value {
+  background-color: #000;
+}
+
+html[data-theme="punk"] div#dropzone {
+    background-color: #000;
+    background-image: url(crumpled-paper.png);
+    background-size: 120% 109%;
+    background-position: 56% 71%;
+    border: 0;
+}
+
+/* The dropzone sits on paper, so its heading needs ink, not the light theme ink. */
+html[data-theme="punk"] .dropzone .dz-title {
+  color: #0b0b0c;
+  text-shadow: 2px 2px 0 rgba(255, 43, 0, 0.3);
+}
+
+
+/* Hand-sewn patches pinned to the paper surfaces. */
+html[data-theme="punk"] .live-card,
+html[data-theme="punk"] .dropzone {
+  position: relative;
+}
+
+html[data-theme="punk"] .hero-now::after,
+html[data-theme="punk"] .live-card::after,
+html[data-theme="punk"] .dropzone::after {
+  display: block;
+  position: absolute;
+  z-index: 2;
+  padding: 7px 8px 6px;
+  border: 2px solid #0b0b0c;
+  border-radius: 2px 4px 1px 3px;
+  outline: 2px dashed rgba(244, 242, 238, 0.75);
+  outline-offset: -6px;
+  box-shadow: 3px 3px 0 #000;
+  color: #0b0b0c;
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.11em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: pre;
+  pointer-events: none;
+}
+
+/* Safety pins clipped over one corner of each patch.
+ * Glyph adapted from Fluent Emoji High Contrast (MIT, Microsoft). */
+html[data-theme="punk"] .hero-now::before,
+html[data-theme="punk"] .live-card::before,
+html[data-theme="punk"] .dropzone::before {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='%23d8d4c9'%3E%3Cpath d='M5.717 19.44a4.69 4.69 0 0 1 6.7 0a4.834 4.834 0 0 1 0 6.761a4.69 4.69 0 0 1-6.7 0a4.834 4.834 0 0 1 0-6.761m5.274 1.403a2.69 2.69 0 0 0-3.849 0a2.834 2.834 0 0 0 0 3.955a2.69 2.69 0 0 0 3.849 0a2.834 2.834 0 0 0 0-3.955'/%3E%3Cpath d='m11.877 7.824l4.533-4.407a8.61 8.61 0 0 1 12.183 12.165l-4.376 4.514a.634.634 0 0 1-.787.099l-8.732 8.52l-.015-.015a8.007 8.007 0 0 1-11.33-.097c-3.137-3.188-3.137-8.377 0-11.565l8.294-8.427a.83.83 0 0 1 .23-.787m1.157 2.23L4.778 18.44c-2.37 2.41-2.37 6.35 0 8.759a6.007 6.007 0 0 0 8.577 0c2.371-2.41 2.371-6.35 0-8.759a6.05 6.05 0 0 0-2.91-1.644a1 1 0 0 1-.48-1.674l4.11-4.175a3 3 0 0 1-.347-.272zm3.282 1.468L12.49 15.41a8.14 8.14 0 0 1 3.96 4.107l3.173-3.097a4.02 4.02 0 0 1 .524-4.999l.824-.833a2.805 2.805 0 0 1 3.896-.09a1.24 1.24 0 0 0-.104-1.761L23.55 7.67a1.65 1.65 0 0 0-2.233.05l-2.994 2.877a3.37 3.37 0 0 1-2.007.925m4.675 6.358l-3.93 3.836c.081.618.094 1.243.038 1.862l4.875-4.757z'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  filter: drop-shadow(1px 2px 0 #000);
+  pointer-events: none;
+}
+
+html[data-theme="punk"] .hero-now::before {
+  top: 4px;
+  right: 81px;
+  transform: rotate(-12deg);
+}
+
+html[data-theme="punk"] .live-card::before {
+  top: -17px;
+  right: 58px;
+  transform: rotate(8deg);
+}
+
+html[data-theme="punk"] .dropzone::before {
+  top: -17px;
+  right: 51px;
+  transform: rotate(-7deg);
+}
+
+html[data-theme="punk"] .hero-now::after {
+  content: "NO\A SELLOUT";
+  top: 17px;
+  right: 20px;
+  width: 76px;
+  background: var(--accent);
+  outline-color: #0b0b0c;
+  transform: rotate(4deg);
+}
+
+html[data-theme="punk"] .live-card::after {
+  content: "LOUD";
+  top: -9px;
+  right: 16px;
+  padding: 6px 10px 5px;
+  background: #0b0b0c;
+  color: #f4f2ee;
+  outline-color: rgba(244, 242, 238, 0.7);
+  transform: rotate(-3deg);
+}
+
+html[data-theme="punk"] .dropzone::after {
+  content: "DIY";
+  top: -9px;
+  right: 18px;
+  padding: 5px 11px 4px;
+  background: #f4f2ee;
+  outline-color: #0b0b0c;
+  transform: rotate(2deg);
+}
+
+html[data-theme="punk"] .nav-btn.is-active {
+  outline: 2px dashed rgba(11, 11, 12, 0.55);
+  outline-offset: -5px;
+}
+
+@media (min-width: 641px) {
+  html[data-theme="punk"] .hero-now .np-title { padding-right: 96px; }
+}
+
+@media (max-width: 640px) {
+  html[data-theme="punk"] .hero-now::after,
+  html[data-theme="punk"] .hero-now::before { display: none; }
+}

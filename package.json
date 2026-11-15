@@ -1,0 +1,23 @@
+{
+  "name": "slamdance-audio",
+  "productName": "Slamdance Audio",
+  "version": "1.0.0",
+  "description": "Offline-first, themeable music player for people who care about the music.",
+  "private": true,
+  "main": "electron/main.cjs",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:linux": "node scripts/build.mjs linux",
+    "build:macos": "node scripts/build.mjs macos",
+    "build:windows": "node scripts/build.mjs windows",
+    "build:freebsd": "node scripts/build.mjs freebsd",
+    "stage": "node scripts/stage-web.mjs",
+    "test": "node tests/selftest.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.4"
+  }
+}

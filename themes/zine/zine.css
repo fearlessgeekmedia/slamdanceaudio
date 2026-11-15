@@ -1,0 +1,52 @@
+/* Photocopy Zine — Slamdance Audio theme.
+ * Everything a theme is: variables and rules scoped to this id.
+ * Edit freely; add any CSS the app's markup allows. */
+html[data-theme="zine"] {
+  --bg: #e7dfcd;
+  --bg-2: #ddd4bf;
+  --panel: #f7f2e3;
+  --panel-2: #ece5d2;
+  --ink: #14120f;
+  --ink-dim: #55504a;
+  --ink-faint: #8b8478;
+  --accent: #c3161c;
+  --accent-2: #1d3fa8;
+  --on-accent: #fdf8ea;
+  --line: #14120f;
+  --line-strong: #14120f;
+  --shadow: 3px 3px 0 #14120f;
+  --radius: 0px;
+  --radius-chip: 0px;
+  --panel-border: 3px;
+  --head-track: 0.02em;
+  --head-rot: 0deg;
+  --head-skew: 0deg;
+  --head-style: normal;
+  --head-weight: 900;
+  --head-case: uppercase;
+  --font-display: "Arial Black", "Helvetica Neue", Impact, system-ui, sans-serif;
+  --font-body: "Courier New", ui-monospace, monospace;
+  --font-mono: "Courier New", ui-monospace, monospace;
+  --glow: none;
+  --figure-a: #14120f;
+  --figure-b: #c3161c;
+  --figure-c: #1d3fa8;
+  --figure-d: #55504a;
+  --floor: #14120f;
+}
+
+html[data-theme="zine"] .card { box-shadow: 5px 5px 0 var(--ink); }
+
+html[data-theme="zine"] .block-head h2 {
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 4px;
+}
+
+html[data-theme="zine"] .chip { border-width: 2px; }
+
+html[data-theme="zine"] #grain { opacity: 0.09; }
+
+html[data-theme="zine"] .topbar { background: var(--panel); }
+
+html[data-theme="zine"] .transport { background: var(--panel-2); }

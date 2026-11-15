@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="pit">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Slamdance Audio — an offline-first, themeable music player for people who care about the music." />
+  <meta name="color-scheme" content="dark light" />
+  <title>Slamdance Audio</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <canvas id="pit-canvas" aria-hidden="true"></canvas>
+  <div id="grain" aria-hidden="true"></div>
+
+  <svg class="svg-defs" aria-hidden="true" focusable="false">
+    <filter id="rough-ink" x="-4%" y="-12%" width="108%" height="124%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03 0.9" numOctaves="2" seed="7" result="noise" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="3.2" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+  </svg>
+
+  <div class="app">
+    <header class="topbar">
+      <button class="brand" id="brand-home" title="Slamdance Audio">
+        <span class="brand-main">SLAMDANCE</span>
+        <span class="brand-sub">AUDIO</span>
+      </button>
+
+      <nav class="nav" aria-label="Views">
+        <button class="nav-btn is-active" data-view="player">Stage</button>
+        <button class="nav-btn" data-view="library">Library</button>
+        <button class="nav-btn" data-view="pit">Pit Meter</button>
+        <button class="nav-btn" data-view="arc">Energy Arc</button>
+        <button class="nav-btn" data-view="radio">Local Radio</button>
+        <button class="nav-btn" data-view="internet">Internet Radio</button>
+        <button class="nav-btn" data-view="notes">Liner Notes</button>
+        <button class="nav-btn" data-view="themes">Themes</button>
+      </nav>
+
+      <div class="topbar-tools">
+        <label class="field-inline">
+          <span>Skin</span>
+          <select id="theme-select" aria-label="Skin"></select>
+        </label>
+        <button class="btn btn-ghost" id="mosh-toggle" title="Mosh mode (M)">MOSH MODE</button>
+      </div>
+    </header>
+
+    <main id="views">
+      <!-- ══ STAGE ══════════════════════════════════════════════════ -->
+      <section class="panel is-active" data-panel="player">
+        <div class="hero">
+          <div class="hero-now" data-card="hero">
+            <div class="card-head">
+              <p class="eyebrow" id="np-state">Nothing spinning</p>
+              <button class="card-toggle" type="button" data-card-toggle="hero" data-card-label="Now Playing card" aria-label="Close Now Playing card" aria-expanded="true" aria-controls="card-hero-body" title="Close Now Playing card">−</button>
+            </div>
+            <div class="card-body" id="card-hero-body">
+              <h1 class="np-title" id="np-title">Audio</h1>
+              <p class="np-artist" id="np-artist">Local files. No account. No tracking.</p>
+              <div class="chips">
+                <span class="chip chip-static" id="np-scene">no scene tagged</span>
+                <span class="chip chip-static" id="np-bpm">bpm —</span>
+                <span class="chip chip-static" id="np-duration">—:—</span>
+              </div>
+              <div class="np-actions">
+                <button class="btn" id="np-play">Play the pit</button>
+                <button class="btn btn-ghost" id="np-buy">Buy the record</button>
+                <button class="btn btn-ghost" id="np-notes">Liner notes</button>
+              </div>
+              <div class="intensity-readout">
+                <div class="meter meter-lg"><div class="meter-fill" id="np-intensity-fill"></div></div>
+                <div class="meter-meta">
+                  <span>Pit Meter</span>
+                  <span id="np-intensity-label">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <aside class="hero-side">
+            <div class="live-card" data-card="live">
+              <div class="card-head">
+                <div class="live-head"><span class="dot"></span> Live intensity</div>
+                <button class="card-toggle" type="button" data-card-toggle="live" data-card-label="Live intensity card" aria-label="Close Live intensity card" aria-expanded="true" aria-controls="card-live-body" title="Close Live intensity card">−</button>
+              </div>
+              <div class="card-body" id="card-live-body">
+                <div class="meter meter-live"><div class="meter-fill" id="live-meter-fill"></div></div>
+                <div class="live-value" id="live-meter-value">idle</div>
+                <p class="tiny">Read off the mix: loudness × tempo. Internet streams run on the live feed.</p>
+              </div>
+            </div>
+
+            <div class="dropzone" id="dropzone" data-card="dropzone">
+              <div class="card-head">
+                <p class="dz-title">Drag audio here</p>
+                <button class="card-toggle" type="button" data-card-toggle="dropzone" data-card-label="Add audio card" aria-label="Close Add audio card" aria-expanded="true" aria-controls="card-dropzone-body" title="Close Add audio card">−</button>
+              </div>
+              <div class="card-body" id="card-dropzone-body">
+                <p class="tiny">MP3, OGG, FLAC, WAV, M4A — whatever your browser decodes. Files stay on this machine.</p>
+                <div class="dz-actions">
+                  <button class="btn btn-sm" data-add-files>Add files</button>
+                  <button class="btn btn-sm btn-ghost" data-add-folder>Add folder</button>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <div class="queue-block" data-card="queue">
+          <div class="block-head">
+            <h2>Setlist <span class="count" id="queue-count">0</span></h2>
+            <div class="block-tools">
+              <button class="btn btn-sm btn-ghost" id="shuffle-btn" aria-pressed="false">Shuffle</button>
+              <button class="btn btn-sm btn-ghost" id="repeat-btn" aria-pressed="false">Repeat</button>
+              <button class="card-toggle" type="button" data-card-toggle="queue" data-card-label="Setlist card" aria-label="Close Setlist card" aria-expanded="true" aria-controls="card-queue-body" title="Close Setlist card">−</button>
+            </div>
+          </div>
+          <div class="card-body" id="card-queue-body">
+            <ol class="queue" id="queue-list"></ol>
+            <p class="empty" id="queue-empty">Nothing queued. Your library plays top to bottom when you hit play.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ LIBRARY ════════════════════════════════════════════════ -->
+      <section class="panel" data-panel="library">
+        <div class="block-head">
+          <h2>Library <span class="count" id="lib-count">0</span></h2>
+          <div class="block-tools">
+            <button class="btn btn-sm" id="analyze-btn">Analyze tempos</button>
+            <button class="btn btn-sm btn-ghost" data-add-files>Add files</button>
+            <button class="btn btn-sm btn-ghost" data-add-folder>Add folder</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <input type="search" id="lib-search" placeholder="Search title, artist, album, scene, label…" aria-label="Search library" />
+          <label class="field-inline">
+            <span>Sort</span>
+            <select id="lib-sort">
+              <option value="added">Recently added</option>
+              <option value="title">Title A–Z</option>
+              <option value="artist">Artist A–Z</option>
+              <option value="intensity-desc">Pit Meter — hardest first</option>
+              <option value="intensity-asc">Pit Meter — mellow first</option>
+              <option value="bpm-desc">Tempo — fastest first</option>
+              <option value="plays">Most played</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="chips chips-row" id="lib-scenes"></div>
+        <div class="chips chips-row" id="lib-heat">
+          <button class="chip is-active" data-heat="all">All</button>
+          <button class="chip" data-heat="mellow">Mellow 0–39</button>
+          <button class="chip" data-heat="mid">Mid 40–64</button>
+          <button class="chip" data-heat="hot">Hot 65–84</button>
+          <button class="chip" data-heat="chaos">Chaos 85+</button>
+        </div>
+
+        <div class="lib-status tiny" id="lib-status"></div>
+
+        <div class="table-wrap">
+          <table class="lib-table">
+            <thead>
+              <tr>
+                <th class="col-play" aria-label="Play"></th>
+                <th>Title</th>
+                <th>Artist</th>
+                <th>Album</th>
+                <th>Scene</th>
+                <th>Tempo</th>
+                <th>Pit Meter</th>
+                <th class="col-time">Time</th>
+                <th class="col-act" aria-label="Actions"></th>
+              </tr>
+            </thead>
+            <tbody id="lib-body"></tbody>
+          </table>
+          <p class="empty" id="lib-empty">Empty pit. Add local files — they stay on your machine.</p>
+        </div>
+
+        <div class="block-foot">
+          <button class="btn btn-sm btn-ghost" id="clear-lib-btn">Clear library</button>
+          <span class="tiny" id="storage-note"></span>
+        </div>
+      </section>
+
+      <!-- ══ PIT METER ══════════════════════════════════════════════ -->
+      <section class="panel" data-panel="pit">
+        <div class="block-head">
+          <h2>Pit Meter</h2>
+          <button class="btn btn-sm btn-ghost" id="pit-analyze">Analyze missing tempos</button>
+        </div>
+        <p class="lede">
+          Every track scores 0–100 from its tempo and how loud it actually is. A quiet slow song sits
+          near the floor; a loud fast one tries to take the barricade down. Sort by it, filter by it,
+          or hand it to the Energy Arc.
+        </p>
+        <div class="pit-legend">
+          <span class="heat heat-mellow">Mellow</span>
+          <span class="heat heat-mid">Mid</span>
+          <span class="heat heat-hot">Hot</span>
+          <span class="heat heat-chaos">Chaos</span>
+          <span class="tiny">score = tempo 45% + loudness 55%</span>
+        </div>
+        <ol class="pit-list" id="pit-list"></ol>
+        <p class="empty" id="pit-empty">Add tracks first — the meter needs something to measure.</p>
+      </section>
+
+      <!-- ══ ENERGY ARC ═════════════════════════════════════════════ -->
+      <section class="panel" data-panel="arc">
+        <div class="block-head">
+          <h2>Energy Arc</h2>
+          <div class="block-tools">
+            <label class="field-inline">
+              <span>Build from</span>
+              <select id="arc-scope">
+                <option value="filtered">Current library filter</option>
+                <option value="library">Whole library</option>
+                <option value="scene">Tagged scene…</option>
+              </select>
+            </label>
+            <select id="arc-scene" hidden aria-label="Scene for arc"></select>
+            <button class="btn btn-sm" id="arc-build">Build the arc</button>
+            <button class="btn btn-sm btn-ghost" id="arc-play" disabled>Play the set</button>
+          </div>
+        </div>
+        <p class="lede">
+          A set that rises and falls on purpose: warm-up, peak around two thirds, a banger to close.
+          No flat shuffle — this is the shape of a good show.
+        </p>
+        <canvas id="arc-canvas" width="900" height="180" aria-label="Energy arc preview"></canvas>
+        <p class="arc-summary" id="arc-summary">Nothing built yet.</p>
+        <ol class="arc-list" id="arc-list"></ol>
+      </section>
+
+      <!-- ══ LOCAL RADIO ════════════════════════════════════════════ -->
+      <section class="panel" data-panel="radio">
+        <div class="block-head">
+          <h2>Local Radio</h2>
+          <span class="count" id="radio-status">off air</span>
+        </div>
+        <p class="lede">
+          Your library as a station: DJ talk breaks, a station ID sting, no repeats while the show
+          runs. Internet streams live on their own page.
+        </p>
+
+        <div class="radio-grid">
+          <div class="card">
+            <h3>Station in a box</h3>
+            <label class="field">Station name
+              <input id="station-name" maxlength="40" placeholder="Slamdance Radio" />
+            </label>
+            <label class="field">Show name
+              <input id="station-show" maxlength="60" placeholder="Thursday Night Pit" />
+            </label>
+            <label class="check"><input type="checkbox" id="dj-voice" checked /> DJ voice + station ID</label>
+            <div class="card-actions">
+              <button class="btn" id="radio-start">Go on air</button>
+              <button class="btn btn-ghost" id="radio-stop">Off air</button>
+              <button class="btn btn-ghost btn-sm" id="radio-test">Test station ID</button>
+              <button class="btn btn-ghost btn-sm" id="go-internet">Internet radio →</button>
+            </div>
+            <p class="tiny" id="radio-now">No show running.</p>
+          </div>
+        </div>
+
+        <div class="block-head"><h2>Library stations</h2></div>
+        <p class="tiny">Everything in the library, or one scene at a time.</p>
+        <div class="stations" id="local-stations"></div>
+      </section>
+
+      <!-- ══ INTERNET RADIO ═════════════════════════════════════════ -->
+      <section class="panel" data-panel="internet">
+        <div class="block-head">
+          <h2>Internet Radio</h2>
+          <span class="count" id="net-status">off air</span>
+        </div>
+        <p class="lede">
+          Someone else drives. Paste a direct stream URL and tune in — these stations sit beside your
+          local library and play through the same transport.
+        </p>
+
+        <div class="radio-grid">
+          <div class="card">
+            <h3>Add a stream</h3>
+            <div class="field-row">
+              <label class="field">Stream URL
+                <input id="stream-url" placeholder="https://…/stream.mp3" spellcheck="false" />
+              </label>
+              <label class="field">Name
+                <input id="stream-name" placeholder="WFMU / Ska Parade" />
+              </label>
+            </div>
+            <div class="card-actions">
+              <button class="btn" id="stream-add">Add station</button>
+            </div>
+            <p class="tiny">
+              Needs a direct audio stream (MP3/AAC/Ogg), not the station's web player page.
+              CORS-blocked streams still play; the meter runs on the live feed but the audio can't be
+              analysed for BPM or energy.
+            </p>
+            <p class="tiny" id="net-now">No stream playing.</p>
+          </div>
+        </div>
+
+        <div class="block-head"><h2>Saved streams</h2></div>
+        <div class="stations" id="stream-list"></div>
+      </section>
+
+      <!-- ══ LINER NOTES ════════════════════════════════════════════ -->
+      <section class="panel" data-panel="notes">
+        <div class="block-head">
+          <h2>Liner Notes</h2>
+          <span class="count" id="notes-track">no track</span>
+        </div>
+        <p class="lede">
+          Label, era, scene, and where it came from — the stuff the algorithms throw away.
+        </p>
+
+        <form id="notes-form" class="notes-form">
+          <label class="field">Title <input id="note-title" /></label>
+          <label class="field">Artist <input id="note-artist" /></label>
+          <div class="field-row">
+            <label class="field">Scene
+              <input id="note-scene" list="scene-list" placeholder="Third Wave Ska" />
+            </label>
+            <label class="field">Label <input id="note-label" placeholder="Moon Ska" /></label>
+            <label class="field">Era <input id="note-era" placeholder="1997" /></label>
+            <label class="field">BPM <input id="note-bpm" type="number" min="40" max="240" step="0.1" placeholder="est." /></label>
+          </div>
+          <label class="field">Bandcamp / buy link
+            <input id="note-bandcamp" placeholder="https://artist.bandcamp.com/album/…" spellcheck="false" />
+          </label>
+          <label class="field">Notes
+            <textarea id="note-notes" rows="6" placeholder="Where you found it, who played it, what it meant."></textarea>
+          </label>
+          <div class="card-actions">
+            <button class="btn" type="submit">Save notes</button>
+            <button class="btn btn-ghost" type="button" id="note-buy">Open buy link</button>
+            <span class="tiny" id="note-status"></span>
+          </div>
+        </form>
+        <datalist id="scene-list"></datalist>
+      </section>
+
+      <!-- ══ THEMES ═════════════════════════════════════════════════ -->
+      <section class="panel" data-panel="themes">
+        <div class="block-head">
+          <h2>Theme Workshop</h2>
+          <span class="count" id="theme-status">—</span>
+        </div>
+        <p class="lede">
+          Five house skins, each one a CSS file in its own folder under <code>themes/</code> — colour, type, layout and
+          texture are all CSS. Pick a starting point, change the six colours that matter, or write a
+          theme by hand. Your skins live in this browser; <strong>Show theme CSS</strong> gives you a
+          file you can keep permanently.
+        </p>
+
+        <div class="theme-grid">
+          <form id="theme-form" class="card">
+            <h3>Make a skin</h3>
+            <label class="field">Name
+              <input id="theme-name" maxlength="32" placeholder="Basement Show" />
+            </label>
+            <label class="field">Start from
+              <select id="theme-base"></select>
+            </label>
+
+            <div class="theme-colors">
+              <label class="field field-color">Background <input type="color" id="tc-bg" value="#0a0a0c" /></label>
+              <label class="field field-color">Panel <input type="color" id="tc-panel" value="#15151b" /></label>
+              <label class="field field-color">Text <input type="color" id="tc-ink" value="#f5f1e6" /></label>
+              <label class="field field-color">Accent <input type="color" id="tc-accent" value="#ff3b00" /></label>
+              <label class="field field-color">Second accent <input type="color" id="tc-accent2" value="#c8ff00" /></label>
+              <label class="field field-color">Lines <input type="color" id="tc-line" value="#2a2a33" /></label>
+            </div>
+
+            <div class="field-row">
+              <label class="field">Display type <select id="tc-font-display"></select></label>
+              <label class="field">Body type <select id="tc-font-body"></select></label>
+            </div>
+
+            <div class="card-actions">
+              <button class="btn" type="submit" id="theme-save">Save theme</button>
+              <button class="btn btn-ghost" type="button" id="theme-revert">Revert</button>
+              <button class="btn btn-ghost" type="button" id="theme-css-btn">Show theme CSS</button>
+            </div>
+            <p class="tiny">Edits preview live on the whole app. Saving adds the skin to this browser; copy its CSS into a theme folder under <code>themes/</code> to keep it for good.</p>
+          </form>
+
+          <div class="card">
+            <h3>Preview</h3>
+            <div class="preview" id="theme-preview">
+              <span class="preview-brand">SLAMDANCE</span>
+              <p class="preview-title">Basement show</p>
+              <p class="preview-body">Loud, fast, and tagged with the city it came from.</p>
+              <div class="meter"><div class="meter-fill" style="width:72%"></div></div>
+              <div class="preview-chips">
+                <span class="chip">Third Wave Ska</span>
+                <span class="chip is-active">Hot</span>
+              </div>
+            </div>
+
+            <h3 class="sub-head">Your skins</h3>
+            <div id="custom-themes" class="custom-list"></div>
+            <p class="tiny" id="custom-empty">No custom or imported skins yet.</p>
+            <div class="card-actions">
+              <button class="btn btn-sm" type="button" id="theme-import-sdt">Import .sdt</button>
+              <button class="btn btn-sm btn-ghost" type="button" id="theme-import-dir">Import folder</button>
+            </div>
+            <p class="tiny">
+              A <code>.sdt</code> is a zip with <code>theme.json</code> and CSS (assets are inlined).
+              A folder with the same files works too. Imported themes live in this app, not in the
+              <code>themes/</code> folder.
+            </p>
+            <input type="file" id="theme-import-sdt-input" accept=".sdt,.zip,application/zip" hidden />
+            <input type="file" id="theme-import-dir-input" webkitdirectory directory multiple hidden />
+          </div>
+        </div>
+
+        <div class="block-head"><h2>Layout</h2></div>
+        <div class="card layout-card">
+          <h3>What's on screen</h3>
+          <div class="layout-toggles">
+            <label class="check"><input type="checkbox" id="ly-hero" data-layout-key="hero" checked /> Now-playing hero</label>
+            <label class="check"><input type="checkbox" id="ly-live" data-layout-key="live" checked /> Live intensity card</label>
+            <label class="check"><input type="checkbox" id="ly-pit" data-layout-key="pit" checked /> Pit visualizer behind the app</label>
+            <label class="check"><input type="checkbox" id="ly-grain" data-layout-key="grain" checked /> Film grain</label>
+            <label class="check"><input type="checkbox" id="ly-wide" data-layout-key="wide" /> Wide canvas</label>
+          </div>
+          <p class="tiny">
+            Skins rearrange the app on their own — masthead, hero and density. These switches are
+            yours. The transport (play, stop, seek, volume) always stays.
+          </p>
+        </div>
+
+        <div class="block-head"><h2>Export</h2></div>
+        <textarea id="theme-css" class="css-out" rows="10" readonly spellcheck="false" placeholder="Hit “Show theme CSS” for a complete themes/&lt;id&gt;/&lt;id&gt;.css file."></textarea>
+        <div class="card-actions">
+          <button class="btn btn-sm btn-ghost" type="button" id="theme-css-copy">Copy theme CSS</button>
+          <span class="tiny">Save it as <code>themes/&lt;id&gt;/&lt;id&gt;.css</code>, add the entry to <code>themes/manifest.js</code>, reload.</span>
+        </div>
+      </section>
+    </main>
+
+    <footer class="transport">
+      <div class="tp-buttons">
+        <button class="tp-btn" id="btn-prev" title="Previous (P)">⏮</button>
+        <button class="tp-btn tp-play" id="btn-play" title="Play / pause (Space)">▶</button>
+        <button class="tp-btn" id="btn-stop" title="Stop (S)">■</button>
+        <button class="tp-btn" id="btn-next" title="Next (N)">⏭</button>
+      </div>
+
+      <div class="tp-now">
+        <div class="tp-title" id="tp-title">—</div>
+        <div class="tp-artist" id="tp-artist">Slamdance Audio · offline first</div>
+      </div>
+
+      <div class="tp-seek">
+        <span class="time" id="time-current">0:00</span>
+        <input type="range" id="seek" min="0" max="1000" value="0" step="1" aria-label="Seek" />
+        <span class="time" id="time-total">0:00</span>
+      </div>
+
+      <div class="tp-tools">
+        <label class="field-inline">
+          <span>Crossfade</span>
+          <select id="crossfade-select">
+            <option value="0">Hard cut</option>
+            <option value="2">Quick blend</option>
+            <option value="5">Smooth blend</option>
+            <option value="10">Long mix</option>
+          </select>
+        </label>
+        <label class="vol">
+          <span>Vol</span>
+          <input type="range" id="volume" min="0" max="100" value="85" aria-label="Volume" />
+        </label>
+        <div class="mini-pit" title="Live pit meter"><div class="mini-fill" id="pit-mini-fill"></div></div>
+        <span class="live-badge" id="live-badge" hidden>LIVE</span>
+      </div>
+    </footer>
+  </div>
+
+  <div id="mosh-hud" aria-hidden="true">
+    <div class="hud-top">
+      <span class="hud-label">Mosh Mode</span>
+      <span class="hud-hint">Esc to leave the pit</span>
+    </div>
+    <div class="hud-bottom">
+      <div class="hud-track" id="hud-track">—</div>
+      <div class="hud-meter"><div class="hud-meter-fill" id="hud-meter-fill"></div></div>
+      <div class="hud-meta">
+        <span id="hud-bpm">— bpm</span>
+        <span id="hud-intensity">pit meter —</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="drop-overlay" aria-hidden="true">
+    <div class="drop-overlay-inner">DROP IT IN THE PIT</div>
+  </div>
+
+  <div class="folder-modal" id="folder-modal" hidden role="dialog" aria-modal="true" aria-labelledby="folder-title">
+    <div class="folder-sheet">
+      <div class="folder-head">
+        <h2 id="folder-title">Add a folder</h2>
+        <button class="folder-close" id="folder-cancel" type="button" aria-label="Close folder browser">×</button>
+      </div>
+      <p class="folder-path" id="folder-path">—</p>
+      <div class="folder-list" id="folder-list"></div>
+      <p class="folder-note tiny" id="folder-note"></p>
+      <div class="folder-actions">
+        <button class="btn btn-sm btn-ghost" id="folder-up" type="button">Up one level</button>
+        <button class="btn btn-sm" id="folder-add" type="button">Add this folder</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toasts" role="status" aria-live="polite"></div>
+  <noscript><p class="noscript">Slamdance Audio needs JavaScript — it is a local player, not a service.</p></noscript>
+
+  <input type="file" id="file-input" accept="audio/*,.mp3,.ogg,.oga,.flac,.wav,.m4a,.aac,.opus,.webm" multiple hidden />
+  <input type="file" id="folder-input" webkitdirectory directory multiple hidden />
+  <input type="file" id="relink-input" accept="audio/*,.mp3,.ogg,.oga,.flac,.wav,.m4a,.aac,.opus,.webm" hidden />
+
+  <script src="js/bpm.js"></script>
+  <script src="js/arc.js"></script>
+  <script src="themes/manifest.js"></script>
+  <script src="js/themes.js"></script>
+  <script src="js/theme-import.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/analysis.js"></script>
+  <script src="js/metadata.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/mosh.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
