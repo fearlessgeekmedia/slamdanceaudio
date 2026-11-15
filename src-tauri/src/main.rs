@@ -168,7 +168,63 @@ fn default_music_dir() -> String {
     }
 }
 
+// The AppImage carries WebKitGTK built on Ubuntu, whose libgstreamer looks for
+// plugins under Debian's multiarch directory. A distro that keeps its plugins
+// in /usr/lib/gstreamer-1.0 (Void, Fedora, Arch) therefore gave the bundled
+// webview no elements at all: decodebin, appsink and autoaudiosink were all
+// "not found", so every decode failed and the player silently did nothing.
+// Pointing GStreamer at the plugins present on this machine, plus its scanner,
+// keeps the bundle self-contained while still decoding on those distros.
+fn host_gstreamer_dirs() -> Vec<String> {
+    let mut dirs: Vec<String> = Vec::new();
+    for base in ["/usr/lib", "/usr/lib64", "/usr/local/lib"] {
+        let plain = Path::new(base).join("gstreamer-1.0");
+        if plain.is_dir() {
+            dirs.push(plain.to_string_lossy().into_owned());
+        }
+        let Ok(entries) = fs::read_dir(base) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let candidate = entry.path().join("gstreamer-1.0");
+            if candidate.is_dir() {
+                dirs.push(candidate.to_string_lossy().into_owned());
+            }
+        }
+    }
+    dirs.sort();
+    dirs.dedup();
+    dirs
+}
+
+fn use_host_gstreamer() {
+    let dirs = host_gstreamer_dirs();
+    if dirs.is_empty() {
+        return;
+    }
+    let joined = dirs.join(":");
+    for key in ["GST_PLUGIN_SYSTEM_PATH_1_0", "GST_PLUGIN_PATH_1_0"] {
+        let existing = std::env::var(key).unwrap_or_default();
+        let value = if existing.is_empty() {
+            joined.clone()
+        } else {
+            format!("{joined}:{existing}")
+        };
+        std::env::set_var(key, value);
+    }
+    if std::env::var_os("GST_PLUGIN_SCANNER").is_none() {
+        for base in ["/usr/libexec/gstreamer-1.0", "/usr/lib/gstreamer-1.0"] {
+            let scanner = Path::new(base).join("gst-plugin-scanner");
+            if scanner.is_file() {
+                std::env::set_var("GST_PLUGIN_SCANNER", scanner);
+                break;
+            }
+        }
+    }
+}
+
 fn main() {
+    use_host_gstreamer();
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             browse_dir,

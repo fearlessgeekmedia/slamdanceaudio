@@ -161,6 +161,13 @@ a browser.
 - Installers come out in `dist/`, staged web files in `build/web/`; both are disposable.
 - The AppImage build patches `pkg-config` copies on `/usr/lib64` distros (Void, Fedora, openSUSE)
   so linuxdeploy finds GTK's `immodules.cache`; no manual setup is needed.
+- Linux playback needs GStreamer. The AppImage bundles the media framework (base, good, bad and
+  ugly plugins), and the .deb depends on those packages plus `gstreamer1.0-libav`, so MP3, FLAC
+  and friends decode without extra setup. Building the AppImage's media bundle needs `patchelf`
+  on the build machine.
+- An AppImage carries the build machine's WebKitGTK. One built on Void runs on Void, but inside an
+  Ubuntu distrobox/podman container its web process may never start (the window stays blank) — use
+  the .deb there, or build the AppImage on the distro you plan to run it on.
 - macOS signing and notarization are not configured — add your identity to the Tauri config for
   distribution beyond your own machine.
 - The FreeBSD archive expects Electron on the machine that runs it; `ELECTRON_BIN` overrides the

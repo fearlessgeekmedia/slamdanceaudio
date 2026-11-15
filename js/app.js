@@ -1279,15 +1279,36 @@
     toast('Removed station "' + name + '". No local files were touched.');
   }
 
+  var clearArmedAt = 0;
+
   function clearLibrary() {
     if (!localTracks().length) {
       toast('The library is already empty.');
       return;
     }
-    if (!window.confirm('Remove every local track from the library? Files on disk are not touched.')) return;
-    S.clearLibrary();
-    P.invalidateAll();
+    var button = $('clear-lib-btn');
+    var now = Date.now();
+    // window.confirm() blocks the GTK web view and left the window frozen, so
+    // the second click is the confirmation instead.
+    if (now - clearArmedAt > 4000) {
+      clearArmedAt = now;
+      if (button) button.textContent = 'Click again to clear';
+      toast('Click Clear library again to remove every local track. Files on disk are not touched.', 'bad');
+      setTimeout(function () {
+        if (Date.now() - clearArmedAt >= 4000) {
+          clearArmedAt = 0;
+          if (button) button.textContent = 'Clear library';
+        }
+      }, 4200);
+      return;
+    }
+    clearArmedAt = 0;
+    if (button) button.textContent = 'Clear library';
+    // Stop before the blobs go away: revoking a source the player still holds
+    // is what wedged the old media-element pipeline.
     P.stop();
+    P.invalidateAll();
+    S.clearLibrary();
     current = null;
     arcTracks = [];
     setQueue([], -1);
@@ -2360,6 +2381,9 @@
           break;
         }
       }
+      // A track that is not in the queue must not make advance() fall back to
+      // queue[0]; that is what jumped the first click to the first song.
+      if (at === -1) return null;
       var next = queue[at + 1];
       if (!next && settings.repeat) next = queue[0];
       return next || null;

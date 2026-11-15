@@ -1,7 +1,7 @@
 {
   "name": "slamdance-audio",
   "productName": "Slamdance Audio",
-  "version": "0.0.1",
+  "version": "0.0.1+r1",
   "description": "Offline-first, themeable music player for people who care about the music.",
   "private": true,
   "main": "electron/main.cjs",
