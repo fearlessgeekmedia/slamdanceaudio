@@ -1,6 +1,6 @@
 [package]
 name = "slamdance-audio"
-version = "1.0.0"
+version = "0.0.1"
 description = "Offline-first, themeable music player"
 authors = ["Fearless Geek Media"]
 edition = "2021"

@@ -362,7 +362,7 @@ function buildFreeBsd() {
       {
         name: SLUG,
         productName: PKG.productName || 'Slamdance Audio',
-        version: PKG.version || '1.0.0',
+        version: PKG.version || '0.0.1',
         description: PKG.description || '',
         main: 'main.cjs',
         private: true,
