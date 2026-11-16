@@ -18,6 +18,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
@@ -280,6 +281,22 @@ function requireNativeHost(platform) {
   }
 }
 
+/* npm writes the .bin shims executable, but a node_modules that was copied,
+ * restored from a backup, or unpacked with a permissive umask can come back
+ * mode 0666. spawnSync then fails with EACCES before the CLI ever starts, and
+ * the error looks like a missing tool rather than a missing permission bit. */
+function ensureExecutable(file) {
+  if (IS_WINDOWS) return file;
+  try {
+    if ((statSync(file).mode & 0o111) !== 0) return file;
+    chmodSync(file, 0o755);
+    console.log('[build] repaired missing execute bit on ' + path.relative(ROOT, file));
+  } catch (err) {
+    // Missing or read-only: the spawn that follows reports the real problem.
+  }
+  return file;
+}
+
 function ensureTauriCli(options) {
   const local = path.join(
     ROOT,
@@ -287,7 +304,7 @@ function ensureTauriCli(options) {
     '.bin',
     IS_WINDOWS ? 'tauri.cmd' : 'tauri'
   );
-  if (existsSync(local)) return local;
+  if (existsSync(local)) return ensureExecutable(local);
 
   if (!options.install) {
     fail('Tauri CLI is missing. Run npm install, or drop --no-install.');
@@ -299,7 +316,7 @@ function ensureTauriCli(options) {
   run(npm, args, { shell: IS_WINDOWS });
 
   if (!existsSync(local)) fail('npm finished but the Tauri CLI is still missing.');
-  return local;
+  return ensureExecutable(local);
 }
 
 function checkTauriPrereqs(platform) {
