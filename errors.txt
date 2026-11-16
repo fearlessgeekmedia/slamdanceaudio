@@ -1,0 +1,3 @@
+Successfully verified installer hash
+Starting package install...
+Installer failed with exit code: 2147942512

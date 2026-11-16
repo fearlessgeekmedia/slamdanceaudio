@@ -143,6 +143,112 @@ function probe(command, args) {
   return !result.error && result.status === 0;
 }
 
+/* Git for Windows and MSYS2 ship a coreutils program called link.exe in
+ * usr/bin. It has nothing to do with linking, but Git Bash puts /usr/bin ahead
+ * of the MSVC toolchain on PATH, so cargo's `-C linker=link.exe` runs the
+ * hardlink tool and dies with "link: extra operand". Rather than ask the user
+ * to reorder PATH, resolve the real MSVC linker and pass it to cargo. */
+const MSYS_TOOL_DIRECTORY = /[\\/](?:usr[\\/]bin|msys\d*|mingw(?:32|64))[\\/]?$/i;
+
+function isMsysDirectory(directory) {
+  if (MSYS_TOOL_DIRECTORY.test(directory)) return true;
+  // MSYS tool directories always keep a shell next to their tools; VC does not.
+  return existsSync(path.join(directory, 'bash.exe'));
+}
+
+function windowsTriple(options) {
+  if (options.triple) return options.triple;
+  return process.arch === 'arm64' ? 'aarch64-pc-windows-msvc' : 'x86_64-pc-windows-msvc';
+}
+
+function msvcLinkerFromPath() {
+  const directories = (process.env.PATH || process.env.Path || '').split(path.delimiter);
+  const found = [];
+  for (const directory of directories) {
+    if (!directory || isMsysDirectory(directory)) continue;
+    const linker = path.join(directory, 'link.exe');
+    if (existsSync(linker)) found.push(linker);
+  }
+  return found.find((linker) => /[\\/]VC[\\/]Tools[\\/]MSVC[\\/]/i.test(linker)) || found[0] || null;
+}
+
+// Visual Studio installs do not put link.exe on the global PATH, and Winboat
+// images may only have the Build Tools. vswhere knows where they live.
+function msvcLinkerFromVisualStudio(options) {
+  const vswhere = path.join(
+    process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)',
+    'Microsoft Visual Studio',
+    'Installer',
+    'vswhere.exe'
+  );
+  if (!existsSync(vswhere)) return null;
+
+  const result = spawnSync(
+    vswhere,
+    [
+      '-latest',
+      '-products',
+      '*',
+      '-requires',
+      'Microsoft.VisualStudio.Component.VC.Tools.x86.x64',
+      '-property',
+      'installationPath',
+    ],
+    { cwd: ROOT, encoding: 'utf8' }
+  );
+  if (result.error || result.status !== 0) return null;
+
+  const installation = String(result.stdout || '').split(/\r?\n/)[0].trim();
+  if (!installation) return null;
+
+  const tools = path.join(installation, 'VC', 'Tools', 'MSVC');
+  if (!existsSync(tools)) return null;
+
+  const host = process.arch === 'arm64' ? 'Hostarm64' : 'Hostx64';
+  const machine = windowsTriple(options).startsWith('aarch64') ? 'arm64' : 'x64';
+  const versions = readdirSync(tools)
+    .filter((name) => /^\d+(\.\d+)+$/.test(name))
+    .sort((a, b) => {
+      const left = a.split('.').map(Number);
+      const right = b.split('.').map(Number);
+      for (let i = 0; i < Math.max(left.length, right.length); i += 1) {
+        if ((left[i] || 0) !== (right[i] || 0)) return (right[i] || 0) - (left[i] || 0);
+      }
+      return 0;
+    });
+
+  for (const version of versions) {
+    const linker = path.join(tools, version, 'bin', host, machine, 'link.exe');
+    if (existsSync(linker)) return linker;
+  }
+  return null;
+}
+
+function msvcLinkerEnv(platform, options) {
+  if (platform !== 'windows') return null;
+
+  const variable =
+    'CARGO_TARGET_' + windowsTriple(options).replace(/-/g, '_').toUpperCase() + '_LINKER';
+  if (process.env[variable]) {
+    console.log('[build] using ' + variable + ' from the environment');
+    return null;
+  }
+
+  const linker = msvcLinkerFromPath() || msvcLinkerFromVisualStudio(options);
+  if (!linker) {
+    fail(
+      'No Microsoft C++ linker (link.exe) was found, so the Tauri build cannot link.\n' +
+        '  Install the Visual Studio Build Tools "Desktop development with C++" workload,\n' +
+        '  then run this again. (Git for Windows also ships a link.exe in usr/bin that is\n' +
+        '  a coreutils hardlink tool, not a linker; that is what fails with\n' +
+        '  "link: extra operand".)'
+    );
+  }
+
+  console.log('[build] MSVC linker -> ' + linker);
+  return { [variable]: linker };
+}
+
 function hostPlatform() {
   if (!HOST) fail('Unsupported host platform: ' + process.platform);
   return HOST;
@@ -298,7 +404,9 @@ function buildTauri(platform, options) {
   }
   if (options.triple) args.push('--target', options.triple);
 
-  const env = appImageEnv(platform, options);
+  let env = appImageEnv(platform, options);
+  const linker = msvcLinkerEnv(platform, options);
+  if (linker) env = { ...(env || process.env), ...linker };
   run(tauri, args, env ? { shell: IS_WINDOWS, env } : { shell: IS_WINDOWS });
 
   if (options.bundle) {
