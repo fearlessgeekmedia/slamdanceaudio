@@ -2,7 +2,22 @@
 
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const fs = require('node:fs/promises');
+const fsSync = require('node:fs');
 const path = require('node:path');
+
+function resolveIcon() {
+  for (const candidate of [
+    path.join(__dirname, 'slamdanceaudio-icon.png'),
+    path.join(__dirname, '..', 'slamdanceaudio-icon.png'),
+  ]) {
+    try {
+      if (fsSync.existsSync(candidate)) return candidate;
+    } catch (err) {
+      // Missing or unreadable: try the next location.
+    }
+  }
+  return undefined;
+}
 
 const AUDIO_EXTENSIONS = new Set([
   'mp3',
@@ -100,6 +115,7 @@ function createWindow() {
     show: false,
     backgroundColor: '#0a0a0c',
     title: 'Slamdance Audio',
+    icon: resolveIcon(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,

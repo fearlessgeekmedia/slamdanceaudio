@@ -1,5 +1,6 @@
 # Slamdance Audio
 
+~[Slamdance Audio Icon/Logo](slamdanceaudio-icon.png)
 An offline-first music player for people who care about the music. Your files stay on your
 machine — no account, no upload, no telemetry, no network request unless you tune an internet
 stream yourself.
