@@ -24,6 +24,7 @@
   var playing = false;
   var fading = false;
   var switching = false;
+  var transitioning = false;
   var crossfade = 0;
   var volume = 0.85;
   var resolver = null;
@@ -208,6 +209,7 @@
       crossfade > 0 &&
       !fading &&
       !switching &&
+      !transitioning &&
       current &&
       !current.stream &&
       duration > crossfade + 4 &&
@@ -344,15 +346,22 @@
   }
 
   function advance(seconds) {
+    // Decoding the next track takes a tick or two, and tick() must not queue a
+    // second advance while that load is in flight. `transitioning` covers just
+    // that window: `fading` used to be set here, and playTrack()'s own guard
+    // then refused the blend, so every crossfade landed as a hard cut.
+    if (transitioning) return;
     var next = resolver ? resolver(current) : null;
     if (!next) {
       setPlaying(false);
       emit('queueend', {});
       return;
     }
+    transitioning = true;
     fading = seconds > 0;
-    P.playTrack(next, { crossfade: seconds }).catch(function () {
+    P.playTrack(next, { crossfade: seconds, auto: true }).catch(function () {
       fading = false;
+      transitioning = false;
     });
   }
 
@@ -416,14 +425,17 @@
         settle();
         if (token !== playToken) return;
         var previous = current;
+        // advance() marks the queue run as fading before the load lands, so an
+        // automatic transition overrides that flag; a track the user picks mid
+        // fade still cuts straight across.
         var canFade =
           seconds > 0 &&
           playing &&
           previous &&
           !previous.stream &&
           decks[active].playing &&
-          !fading &&
-          !switching;
+          !switching &&
+          (opts.auto || !fading);
 
         streamMode = false;
         if (radioEl && !radioEl.paused) {
@@ -443,6 +455,16 @@
         var nextDeck = decks[nextActive];
         var oldDeck = decks[active];
 
+        // Decoding costs the old track real playback time, so a fade that
+        // starts near the end would outlive its buffer. Fit it to the audio
+        // that is actually left instead.
+        var fadeSeconds = seconds;
+        if (canFade) {
+          var left = (oldDeck.duration || 0) - deckPosition(oldDeck);
+          if (left <= 0.05) canFade = false;
+          else if (left < fadeSeconds) fadeSeconds = left;
+        }
+
         switching = true;
         try {
           nextDeck.gain.gain.cancelScheduledValues(ctx.currentTime);
@@ -455,7 +477,8 @@
 
         if (canFade) {
           var now = ctx.currentTime;
-          var end = now + seconds;
+          var end = now + fadeSeconds;
+          fading = true;
           nextDeck.gain.gain.linearRampToValueAtTime(1, end);
           var oldValue = oldDeck.gain.gain.value || 1;
           oldDeck.gain.gain.cancelScheduledValues(now);
@@ -476,10 +499,11 @@
               /* ignore */
             }
             fading = false;
-          }, Math.max(240, seconds * 1000 + 90));
+          }, Math.max(240, fadeSeconds * 1000 + 90));
         }
 
         switching = false;
+        transitioning = false;
         setPlaying(true);
         emitTime();
       })
@@ -488,6 +512,7 @@
         if (token !== playToken) throw err;
         switching = false;
         fading = false;
+        transitioning = false;
         setPlaying(false);
         emit('error', err);
         throw err;
@@ -562,6 +587,7 @@
   P.stop = function () {
     fading = false;
     switching = false;
+    transitioning = false;
     if (streamMode) {
       radioEl.pause();
     } else {
